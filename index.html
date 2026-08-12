@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b0b0c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Daily Time">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./icon-180.png">
+<title>Daily Time</title>
+<style>
+  :root{
+    --bg:#0b0b0c;
+    --panel:#151517;
+    --panel2:#1b1b1e;
+    --text:#f5f5f7;
+    --muted:#8e8e93;
+    --line:#2a2a2e;
+    --accent:#f4d35e;
+    --accent2:#9bd1ff;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text)}
+  body{
+    min-height:100vh;
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif;
+    padding:calc(20px + env(safe-area-inset-top)) 18px calc(30px + env(safe-area-inset-bottom));
+  }
+  .app{width:min(720px,100%);margin:0 auto}
+  header{display:flex;justify-content:space-between;align-items:flex-end;margin:6px 2px 24px}
+  .eyebrow{font-size:12px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase}
+  h1{margin:5px 0 0;font-size:30px;letter-spacing:-.04em}
+  .date{font-size:12px;color:var(--muted);padding-bottom:4px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+  .column{display:flex;flex-direction:column;gap:12px;min-width:0}
+  .card{
+    position:relative;overflow:hidden;background:linear-gradient(180deg,var(--panel2),var(--panel));
+    border:1px solid var(--line);border-radius:24px;padding:20px;min-height:310px;
+    display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 18px 50px rgba(0,0,0,.22);
+  }
+  .card::before{content:"";position:absolute;inset:0 auto auto 0;width:100%;height:3px;background:var(--accent)}
+  .card.work::before{background:var(--accent2)}
+  .row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .name{font-size:16px;font-weight:700;letter-spacing:-.01em}
+  .status{font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--muted);border:1px solid var(--line);padding:6px 8px;border-radius:999px}
+  .status.running{color:var(--text);background:#222228}
+  .time{font-size:48px;font-weight:750;letter-spacing:-.055em;font-variant-numeric:tabular-nums;margin:32px 0 8px}
+  .caption{font-size:12px;color:var(--muted)}
+  .progress{height:7px;background:#26262a;border-radius:999px;overflow:hidden;margin:20px 0 4px}
+  .fill{height:100%;width:100%;background:var(--accent);border-radius:999px}
+  .work .fill{background:var(--accent2)}
+  .buttons{display:grid;grid-template-columns:1.3fr 1fr;gap:9px;margin-top:26px}
+  button{border:0;border-radius:14px;padding:14px 12px;font-size:13px;font-weight:750;background:#27272b;color:var(--text);cursor:pointer}
+  button.primary{background:var(--text);color:#0a0a0b}
+  button:active{transform:scale(.985)}
+  button:disabled{opacity:.38;cursor:default}
+
+  .historyBox{border:1px solid var(--line);border-radius:20px;background:#111113;padding:14px}
+  .historyTitle{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+  .historyCount{font-variant-numeric:tabular-nums}
+  .historyList{display:flex;flex-direction:column;gap:2px}
+  .historyItem{padding:11px 4px;border-top:1px solid #202024}
+  .historyItem:first-child{border-top:0}
+  .historyName{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .historyMeta{margin-top:4px;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .historyEmpty{padding:10px 4px 7px;font-size:12px;color:#66666d}
+
+  .note{margin:16px 4px 0;color:var(--muted);font-size:11px;line-height:1.6}
+
+  .sheetBackdrop{position:fixed;inset:0;background:rgba(0,0,0,.58);display:flex;align-items:flex-end;justify-content:center;padding:16px;z-index:50;opacity:0;pointer-events:none;transition:opacity .18s ease}
+  .sheetBackdrop.open{opacity:1;pointer-events:auto}
+  .sheet{width:min(520px,100%);background:#1a1a1d;border:1px solid #303036;border-radius:24px;padding:18px;margin-bottom:calc(4px + env(safe-area-inset-bottom));box-shadow:0 24px 70px rgba(0,0,0,.5);transform:translateY(18px);transition:transform .18s ease}
+  .sheetBackdrop.open .sheet{transform:translateY(0)}
+  .sheetEyebrow{font-size:11px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
+  .sheetTitle{font-size:21px;font-weight:750;letter-spacing:-.03em;margin:5px 0 6px}
+  .sheetMeta{font-size:12px;color:var(--muted);margin-bottom:14px;font-variant-numeric:tabular-nums}
+  .sheet input{width:100%;border:1px solid #34343a;background:#101012;color:var(--text);border-radius:15px;padding:15px 14px;font:inherit;font-size:16px;outline:none}
+  .sheet input:focus{border-color:#66666f}
+  .sheetActions{display:grid;grid-template-columns:1fr 1.6fr;gap:9px;margin-top:11px}
+  .sheetActions .save{background:var(--text);color:#0a0a0b}
+
+  @media(max-width:600px){
+    h1{font-size:28px}.grid{grid-template-columns:1fr}.card{min-height:270px}.time{font-size:54px}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div><div class="eyebrow">Daily allowance</div><h1>今日の5時間</h1></div>
+    <div class="date" id="today"></div>
+  </header>
+
+  <div class="grid">
+    <div class="column">
+      <section class="card">
+        <div>
+          <div class="row"><div class="name">自由時間</div><div class="status" id="stateA">停止中</div></div>
+          <div class="time" id="timeA">05:00:00</div>
+          <div class="caption">今日の残り時間</div>
+          <div class="progress"><div class="fill" id="fillA"></div></div>
+        </div>
+        <div class="buttons"><button class="primary" id="startA">開始</button><button id="stopA">停止</button></div>
+      </section>
+      <section class="historyBox">
+        <div class="historyTitle"><span>自由時間の履歴</span><span class="historyCount" id="countA">0件</span></div>
+        <div class="historyList" id="historyA"></div>
+      </section>
+    </div>
+
+    <div class="column">
+      <section class="card work">
+        <div>
+          <div class="row"><div class="name">作業時間</div><div class="status" id="stateB">停止中</div></div>
+          <div class="time" id="timeB">05:00:00</div>
+          <div class="caption">今日の残り時間</div>
+          <div class="progress"><div class="fill" id="fillB"></div></div>
+        </div>
+        <div class="buttons"><button class="primary" id="startB">開始</button><button id="stopB">停止</button></div>
+      </section>
+      <section class="historyBox">
+        <div class="historyTitle"><span>作業時間の履歴</span><span class="historyCount" id="countB">0件</span></div>
+        <div class="historyList" id="historyB"></div>
+      </section>
+    </div>
+  </div>
+
+  <div class="note">開始中だけ残り時間が減ります。停止すると内容を記録するバナーが開きます。日付が変わると残り時間とその日の履歴が自動でリセットされます。</div>
+</div>
+
+<div class="sheetBackdrop" id="sheetBackdrop" aria-hidden="true">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <div class="sheetEyebrow" id="sheetEyebrow">Session complete</div>
+    <div class="sheetTitle" id="sheetTitle">何をしてた？</div>
+    <div class="sheetMeta" id="sheetMeta"></div>
+    <input id="activityInput" type="text" maxlength="60" placeholder="例：スト6" autocomplete="off">
+    <div class="sheetActions">
+      <button id="skipSave">記録しない</button>
+      <button class="save" id="saveActivity">履歴に保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DAILY = 5 * 60 * 60 * 1000;
+const KEY = "daily5hTimers_v3";
+const OLD_KEY = "daily5hTimers_v2";
+let pendingSession = null;
+
+function dateKey(d=new Date()){
+  const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,"0"),day=String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${day}`;
+}
+function fmt(ms){
+  ms=Math.max(0,ms);const s=Math.floor(ms/1000);const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60;
+  return [h,m,sec].map(v=>String(v).padStart(2,"0")).join(":");
+}
+function clock(ts){return new Date(ts).toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit",hour12:false})}
+function durationText(ms){
+  const mins=Math.max(1,Math.round(ms/60000));
+  const h=Math.floor(mins/60),m=mins%60;
+  if(h && m) return `${h}h ${m}m`;
+  if(h) return `${h}h`;
+  return `${m}m`;
+}
+function timerFresh(){return {remaining:DAILY,running:false,last:null,sessionStart:null,history:[]}}
+function fresh(){return {date:dateKey(),A:timerFresh(),B:timerFresh()}}
+function normalizeTimer(t={}){
+  return {
+    remaining:Number.isFinite(t.remaining)?t.remaining:DAILY,
+    running:!!t.running,
+    last:t.last||null,
+    sessionStart:t.sessionStart||null,
+    history:Array.isArray(t.history)?t.history:[]
+  };
+}
+function load(){
+  let d=null;
+  try{d=JSON.parse(localStorage.getItem(KEY)||"null")}catch(e){}
+  if(!d){
+    try{
+      const old=JSON.parse(localStorage.getItem(OLD_KEY)||"null");
+      if(old && old.date===dateKey()) d={date:old.date,A:normalizeTimer(old.A),B:normalizeTimer(old.B)};
+    }catch(e){}
+  }
+  if(!d || d.date!==dateKey()) d=fresh();
+  d.A=normalizeTimer(d.A); d.B=normalizeTimer(d.B);
+  return d;
+}
+function save(){localStorage.setItem(KEY,JSON.stringify(data))}
+let data=load();
+
+function rollover(){
+  if(data.date!==dateKey()){
+    data=fresh(); pendingSession=null; closeSheet(); save();
+  }
+}
+function sync(k){
+  const t=data[k];
+  if(t.running && t.last){
+    const now=Date.now();
+    t.remaining=Math.max(0,t.remaining-(now-t.last));
+    t.last=now;
+    if(t.remaining<=0){
+      const start=t.sessionStart||now;
+      t.running=false;t.last=null;t.sessionStart=null;
+      pendingSession={k,start,end:now,duration:Math.max(0,now-start)};
+      openSheet(pendingSession);
+    }
+  }
+}
+function renderHistory(k){
+  const box=document.getElementById("history"+k);
+  const items=data[k].history||[];
+  document.getElementById("count"+k).textContent=`${items.length}件`;
+  if(!items.length){box.innerHTML='<div class="historyEmpty">まだ記録はありません</div>';return}
+  box.innerHTML=items.slice().reverse().map(item=>{
+    const name=escapeHtml(item.name||"未入力");
+    return `<div class="historyItem"><div class="historyName">${name}</div><div class="historyMeta">${clock(item.start)}–${clock(item.end)}（${durationText(item.duration)}）</div></div>`;
+  }).join("");
+}
+function render(){
+  rollover();sync("A");sync("B");
+  for(const k of ["A","B"]){
+    const t=data[k];
+    document.getElementById("time"+k).textContent=fmt(t.remaining);
+    document.getElementById("fill"+k).style.width=((t.remaining/DAILY)*100)+"%";
+    const s=document.getElementById("state"+k);
+    s.textContent=t.running?"計測中":"停止中";s.classList.toggle("running",t.running);
+    document.getElementById("start"+k).disabled=t.running || t.remaining<=0;
+    document.getElementById("stop"+k).disabled=!t.running;
+    renderHistory(k);
+  }
+  document.getElementById("today").textContent=new Date().toLocaleDateString("ja-JP",{month:"2-digit",day:"2-digit",weekday:"short"});
+  save();
+}
+function start(k){
+  rollover();sync(k);
+  const t=data[k];
+  if(t.remaining<=0 || t.running)return;
+  const now=Date.now();
+  t.running=true;t.last=now;t.sessionStart=now;save();render();
+}
+function stop(k){
+  rollover();
+  const t=data[k];
+  if(!t.running)return;
+  sync(k);
+  if(!t.running){save();render();return;}
+  const end=Date.now();
+  const start=t.sessionStart||end;
+  t.running=false;t.last=null;t.sessionStart=null;
+  pendingSession={k,start,end,duration:Math.max(0,end-start)};
+  save();render();openSheet(pendingSession);
+}
+function openSheet(session){
+  const label=session.k==="A"?"自由時間":"作業時間";
+  document.getElementById("sheetEyebrow").textContent=label;
+  document.getElementById("sheetMeta").textContent=`${clock(session.start)}–${clock(session.end)}（${durationText(session.duration)}）`;
+  document.getElementById("activityInput").value="";
+  const el=document.getElementById("sheetBackdrop");el.classList.add("open");el.setAttribute("aria-hidden","false");
+  setTimeout(()=>document.getElementById("activityInput").focus(),120);
+}
+function closeSheet(){
+  const el=document.getElementById("sheetBackdrop");
+  if(!el)return;
+  el.classList.remove("open");el.setAttribute("aria-hidden","true");
+}
+function storePending(){
+  if(!pendingSession)return;
+  const name=document.getElementById("activityInput").value.trim()||"未入力";
+  const s=pendingSession;
+  data[s.k].history.push({name,start:s.start,end:s.end,duration:s.duration});
+  pendingSession=null;save();closeSheet();render();
+}
+function skipPending(){pendingSession=null;closeSheet();render()}
+function escapeHtml(str){return String(str).replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]))}
+
+for(const k of ["A","B"]){
+  document.getElementById("start"+k).onclick=()=>start(k);
+  document.getElementById("stop"+k).onclick=()=>stop(k);
+}
+document.getElementById("saveActivity").onclick=storePending;
+document.getElementById("skipSave").onclick=skipPending;
+document.getElementById("activityInput").addEventListener("keydown",e=>{if(e.key==="Enter")storePending()});
+document.addEventListener("visibilitychange",()=>{if(document.hidden){sync("A");sync("B");save()}else render()});
+window.addEventListener("beforeunload",()=>{sync("A");sync("B");save()});
+setInterval(render,250);
+render();
+
+// Home Screen web app / future Web Push support
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./service-worker.js").catch(err => {
+      console.warn("Service Worker registration failed:", err);
+    });
+  });
+}
+</script>
+</body>
+</html>
