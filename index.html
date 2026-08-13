@@ -1,0 +1,708 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b0b0c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Daily Time">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./icon-180.png">
+<title>Daily Time</title>
+<style>
+  :root{
+    --bg:#0b0b0c;
+    --panel:#151517;
+    --panel2:#1b1b1e;
+    --text:#f5f5f7;
+    --muted:#8e8e93;
+    --line:#2a2a2e;
+    --accent:#f4d35e;
+    --accent2:#9bd1ff;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text)}
+  body{
+    min-height:100vh;
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif;
+    padding:calc(20px + env(safe-area-inset-top)) 18px calc(30px + env(safe-area-inset-bottom));
+  }
+  button,input{font:inherit}
+  .app{width:min(720px,100%);margin:0 auto}
+  .hidden{display:none!important}
+
+  .setupView{
+    min-height:calc(100vh - 50px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    display:flex;flex-direction:column;justify-content:center;
+    width:min(520px,100%);margin:0 auto;padding:18px 0 32px;
+  }
+  .setupTop{display:flex;justify-content:space-between;align-items:center;margin-bottom:48px}
+  .setupDate{font-size:12px;color:var(--muted)}
+  .backButton{
+    border:1px solid var(--line);background:#171719;color:var(--text);
+    border-radius:999px;padding:9px 13px;font-size:12px;font-weight:700;
+  }
+  .setupEyebrow{font-size:12px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;text-align:center}
+  .setupTitle{font-size:42px;font-weight:780;letter-spacing:-.055em;text-align:center;margin:8px 0 6px}
+  .setupTitle .number{
+    display:inline-flex;align-items:center;justify-content:center;
+    min-width:1.15em;font-variant-numeric:tabular-nums;
+  }
+  .setupSub{font-size:13px;line-height:1.65;color:var(--muted);text-align:center;margin:0 auto 30px;max-width:330px}
+  .hourChoices{
+    display:grid;grid-template-columns:repeat(7,1fr);gap:8px;
+    margin:0 auto 26px;width:100%;
+  }
+  .hourChoice{
+    aspect-ratio:1;border-radius:999px;border:1px solid var(--line);
+    background:#171719;color:var(--muted);font-size:16px;font-weight:760;
+    display:flex;align-items:center;justify-content:center;padding:0;
+  }
+  .hourChoice.selected{
+    background:var(--text);color:#0a0a0b;border-color:var(--text);
+  }
+  .confirmHours{
+    width:100%;border:0;border-radius:17px;padding:16px 14px;
+    background:var(--text);color:#0a0a0b;font-size:14px;font-weight:780;
+  }
+  .confirmHours:disabled{opacity:.35}
+  .setupHint{
+    min-height:20px;margin-top:12px;text-align:center;color:var(--muted);
+    font-size:11px;line-height:1.5;
+  }
+
+  header{display:flex;justify-content:space-between;align-items:flex-end;margin:6px 2px 18px}
+  .allowanceButton{
+    border:0;background:transparent;color:inherit;text-align:left;padding:0;margin:0;
+    display:block;cursor:pointer;
+  }
+  .eyebrow{font-size:12px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase}
+  .headingRow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  h1{margin:5px 0 0;font-size:30px;letter-spacing:-.04em}
+  .editMark{
+    margin-top:7px;font-size:10px;color:var(--muted);border:1px solid var(--line);
+    border-radius:999px;padding:4px 7px;font-weight:700;
+  }
+  .date{font-size:12px;color:var(--muted);padding-bottom:4px}
+
+  .weekSection{margin:0 2px 18px}
+  .weekHeader{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:10px}
+  .weekTitle{font-size:16px;font-weight:740;letter-spacing:-.02em}
+  .weekCaption{font-size:11px;color:var(--muted);text-align:right;line-height:1.45}
+  .weekRow{display:flex;gap:10px;overflow-x:auto;padding:2px 2px 8px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
+  .weekRow::-webkit-scrollbar{display:none}
+  .dayCard{
+    flex:0 0 94px;scroll-snap-align:start;
+    background:linear-gradient(180deg,var(--panel2),var(--panel));
+    border:1px solid var(--line);border-radius:22px;padding:12px 10px 13px;
+    text-align:center;box-shadow:0 14px 34px rgba(0,0,0,.18);
+  }
+  .dayCard.today{border-color:#4a4a50;box-shadow:0 14px 38px rgba(0,0,0,.28)}
+  .dayWeek{font-size:11px;color:var(--muted);letter-spacing:.08em}
+  .arcWrap{position:relative;width:76px;height:76px;margin:6px auto 6px}
+  .arcSvg{position:absolute;inset:0;width:100%;height:100%}
+  .arcBg,.arcFg{fill:none;stroke-width:8;stroke-linecap:round}
+  .arcBg{stroke:#242428}
+  .arcFg.top{stroke:var(--accent)}
+  .arcFg.bottom{stroke:var(--accent2)}
+  .dayNum{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:29px;font-weight:790;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+  .dayHours{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .dayUsage{display:flex;justify-content:center;gap:8px;margin-top:6px;font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .usageA::before,.usageB::before{content:"";display:inline-block;width:7px;height:7px;border-radius:999px;margin-right:4px;vertical-align:-1px}
+  .usageA::before{background:var(--accent)}
+  .usageB::before{background:var(--accent2)}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+  .column{display:flex;flex-direction:column;gap:12px;min-width:0}
+  .card{
+    position:relative;overflow:hidden;background:linear-gradient(180deg,var(--panel2),var(--panel));
+    border:1px solid var(--line);border-radius:24px;padding:20px;min-height:310px;
+    display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 18px 50px rgba(0,0,0,.22);
+  }
+  .card::before{content:"";position:absolute;inset:0 auto auto 0;width:100%;height:3px;background:var(--accent)}
+  .card.work::before{background:var(--accent2)}
+  .row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .name{font-size:16px;font-weight:700;letter-spacing:-.01em}
+  .status{font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--muted);border:1px solid var(--line);padding:6px 8px;border-radius:999px}
+  .status.running{color:var(--text);background:#222228}
+  .time{font-size:48px;font-weight:750;letter-spacing:-.055em;font-variant-numeric:tabular-nums;margin:32px 0 8px}
+  .caption{font-size:12px;color:var(--muted)}
+  .progress{height:7px;background:#26262a;border-radius:999px;overflow:hidden;margin:20px 0 4px}
+  .fill{height:100%;width:100%;background:var(--accent);border-radius:999px}
+  .work .fill{background:var(--accent2)}
+  .buttons{display:grid;grid-template-columns:1.3fr 1fr;gap:9px;margin-top:26px}
+  button{border:0;border-radius:14px;padding:14px 12px;font-size:13px;font-weight:750;background:#27272b;color:var(--text);cursor:pointer}
+  button.primary{background:var(--text);color:#0a0a0b}
+  button:active{transform:scale(.985)}
+  button:disabled{opacity:.38;cursor:default}
+
+  .historyBox{border:1px solid var(--line);border-radius:20px;background:#111113;padding:14px}
+  .historyTitle{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+  .historyCount{font-variant-numeric:tabular-nums}
+  .historyList{display:flex;flex-direction:column;gap:2px}
+  .historyItem{padding:11px 4px;border-top:1px solid #202024}
+  .historyItem:first-child{border-top:0}
+  .historyName{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .historyMeta{margin-top:4px;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .historyEmpty{padding:10px 4px 7px;font-size:12px;color:#66666d}
+
+  .note{margin:16px 4px 0;color:var(--muted);font-size:11px;line-height:1.6}
+
+  .sheetBackdrop{position:fixed;inset:0;background:rgba(0,0,0,.58);display:flex;align-items:flex-end;justify-content:center;padding:16px;z-index:50;opacity:0;pointer-events:none;transition:opacity .18s ease}
+  .sheetBackdrop.open{opacity:1;pointer-events:auto}
+  .sheet{width:min(520px,100%);background:#1a1a1d;border:1px solid #303036;border-radius:24px;padding:18px;margin-bottom:calc(4px + env(safe-area-inset-bottom));box-shadow:0 24px 70px rgba(0,0,0,.5);transform:translateY(18px);transition:transform .18s ease}
+  .sheetBackdrop.open .sheet{transform:translateY(0)}
+  .sheetEyebrow{font-size:11px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
+  .sheetTitle{font-size:21px;font-weight:750;letter-spacing:-.03em;margin:5px 0 6px}
+  .sheetMeta{font-size:12px;color:var(--muted);margin-bottom:14px;font-variant-numeric:tabular-nums}
+  .sheet input{width:100%;border:1px solid #34343a;background:#101012;color:var(--text);border-radius:15px;padding:15px 14px;font:inherit;font-size:16px;outline:none}
+  .sheet input:focus{border-color:#66666f}
+  .sheetActions{display:grid;grid-template-columns:1fr 1.6fr;gap:9px;margin-top:11px}
+  .sheetActions .save{background:var(--text);color:#0a0a0b}
+
+  @media(max-width:600px){
+    .setupTitle{font-size:38px}
+    .hourChoices{gap:6px}
+    .hourChoice{font-size:15px}
+    h1{font-size:28px}
+    .weekTitle{font-size:15px}
+    .weekCaption{font-size:10px}
+    .grid{grid-template-columns:1fr}
+    .card{min-height:270px}
+    .time{font-size:54px}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <section class="setupView hidden" id="setupView">
+    <div class="setupTop">
+      <button class="backButton hidden" id="backToTimers">← タイマーに戻る</button>
+      <div class="setupDate" id="setupDate"></div>
+    </div>
+    <div class="setupEyebrow">Daily allowance</div>
+    <div class="setupTitle">本日の <span class="number" id="setupHours">—</span> 時間</div>
+    <div class="setupSub">今日使う時間を1〜7時間から選んでください。途中で変更しても、すでに使った時間はそのまま引き継がれます。</div>
+    <div class="hourChoices" id="hourChoices">
+      <button class="hourChoice" data-hours="1">1</button>
+      <button class="hourChoice" data-hours="2">2</button>
+      <button class="hourChoice" data-hours="3">3</button>
+      <button class="hourChoice" data-hours="4">4</button>
+      <button class="hourChoice" data-hours="5">5</button>
+      <button class="hourChoice" data-hours="6">6</button>
+      <button class="hourChoice" data-hours="7">7</button>
+    </div>
+    <button class="confirmHours" id="confirmHours" disabled>この時間で始める</button>
+    <div class="setupHint" id="setupHint"></div>
+  </section>
+
+  <section id="timerView" class="hidden">
+    <header>
+      <button class="allowanceButton" id="editAllowance" aria-label="本日の時間を変更">
+        <div class="eyebrow">Daily allowance</div>
+        <div class="headingRow">
+          <h1 id="mainAllowance">本日の5時間</h1>
+          <span class="editMark">変更</span>
+        </div>
+      </button>
+      <div class="date" id="today"></div>
+    </header>
+
+    <section class="weekSection">
+      <div class="weekHeader">
+        <div class="weekTitle">1週間の記録</div>
+        <div class="weekCaption">上の弧＝自由時間<br>下の弧＝作業時間</div>
+      </div>
+      <div class="weekRow" id="weekRow"></div>
+    </section>
+
+    <div class="grid">
+      <div class="column">
+        <section class="card">
+          <div>
+            <div class="row"><div class="name">自由時間</div><div class="status" id="stateA">停止中</div></div>
+            <div class="time" id="timeA">00:00:00</div>
+            <div class="caption">今日の残り時間</div>
+            <div class="progress"><div class="fill" id="fillA"></div></div>
+          </div>
+          <div class="buttons"><button class="primary" id="startA">開始</button><button id="stopA">停止</button></div>
+        </section>
+        <section class="historyBox">
+          <div class="historyTitle"><span>自由時間の履歴</span><span class="historyCount" id="countA">0件</span></div>
+          <div class="historyList" id="historyA"></div>
+        </section>
+      </div>
+
+      <div class="column">
+        <section class="card work">
+          <div>
+            <div class="row"><div class="name">作業時間</div><div class="status" id="stateB">停止中</div></div>
+            <div class="time" id="timeB">00:00:00</div>
+            <div class="caption">今日の残り時間</div>
+            <div class="progress"><div class="fill" id="fillB"></div></div>
+          </div>
+          <div class="buttons"><button class="primary" id="startB">開始</button><button id="stopB">停止</button></div>
+        </section>
+        <section class="historyBox">
+          <div class="historyTitle"><span>作業時間の履歴</span><span class="historyCount" id="countB">0件</span></div>
+          <div class="historyList" id="historyB"></div>
+        </section>
+      </div>
+    </div>
+
+    <div class="note">上の「本日の◯時間」をタップすると、途中でも1〜7時間へ変更できます。下の1週間表示では、日ごとの達成度をカレンダーのように横並びで確認できます。</div>
+  </section>
+</div>
+
+<div class="sheetBackdrop" id="sheetBackdrop" aria-hidden="true">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <div class="sheetEyebrow" id="sheetEyebrow">Session complete</div>
+    <div class="sheetTitle" id="sheetTitle">何をしてた？</div>
+    <div class="sheetMeta" id="sheetMeta"></div>
+    <input id="activityInput" type="text" maxlength="60" placeholder="例：スト6" autocomplete="off">
+    <div class="sheetActions">
+      <button id="skipSave">記録しない</button>
+      <button class="save" id="saveActivity">履歴に保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const HOUR_MS = 60 * 60 * 1000;
+const DEFAULT_HOURS = 5;
+const KEY = "dailyTimers_v4";
+const ARCHIVE_KEY = "dailyTimers_archive_v1";
+const OLD_KEYS = ["daily5hTimers_v3","daily5hTimers_v2"];
+let pendingSession = null;
+let selectedHours = null;
+
+function dateKey(d=new Date()){
+  const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,"0"),day=String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${day}`;
+}
+function weekdayLabel(d){
+  return ["日","月","火","水","木","金","土"][d.getDay()];
+}
+function fmt(ms){
+  ms=Math.max(0,ms);
+  const s=Math.floor(ms/1000),h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60;
+  return [h,m,sec].map(v=>String(v).padStart(2,"0")).join(":");
+}
+function clock(ts){
+  return new Date(ts).toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit",hour12:false});
+}
+function durationText(ms){
+  const mins=Math.max(1,Math.round(ms/60000));
+  const h=Math.floor(mins/60),m=mins%60;
+  if(h && m) return `${h}h ${m}m`;
+  if(h) return `${h}h`;
+  return `${m}m`;
+}
+function hourMs(hours){
+  return Number(hours||0) * HOUR_MS;
+}
+function timerFresh(remaining=0){
+  return {remaining,running:false,last:null,sessionStart:null,history:[]};
+}
+function fresh(){
+  return {
+    date:dateKey(),
+    dailyHours:null,
+    configured:false,
+    A:timerFresh(0),
+    B:timerFresh(0)
+  };
+}
+function normalizeTimer(t={}, fallback=DEFAULT_HOURS*HOUR_MS){
+  return {
+    remaining:Number.isFinite(t.remaining)?Math.max(0,t.remaining):fallback,
+    running:!!t.running,
+    last:t.last||null,
+    sessionStart:t.sessionStart||null,
+    history:Array.isArray(t.history)?t.history:[]
+  };
+}
+function loadArchive(){
+  let a=null;
+  try{a=JSON.parse(localStorage.getItem(ARCHIVE_KEY)||"null")}catch(e){}
+  return a && typeof a==="object" ? a : {};
+}
+let archive = loadArchive();
+
+function buildArchiveEntry(state){
+  const total=hourMs(state.dailyHours);
+  return {
+    date:state.date,
+    dailyHours:state.dailyHours,
+    configured:!!state.configured,
+    usedA:state.configured && state.dailyHours!==null ? Math.max(0,total-state.A.remaining) : 0,
+    usedB:state.configured && state.dailyHours!==null ? Math.max(0,total-state.B.remaining) : 0
+  };
+}
+function pruneArchive(){
+  const keys=Object.keys(archive).sort();
+  const max=35;
+  while(keys.length>max){
+    const oldest=keys.shift();
+    delete archive[oldest];
+  }
+}
+function persistArchiveSnapshot(state){
+  if(!state || !state.date)return;
+  archive[state.date]=buildArchiveEntry(state);
+  pruneArchive();
+}
+function saveArchive(){
+  localStorage.setItem(ARCHIVE_KEY,JSON.stringify(archive));
+}
+function load(){
+  let d=null;
+  try{d=JSON.parse(localStorage.getItem(KEY)||"null")}catch(e){}
+
+  if(!d){
+    for(const oldKey of OLD_KEYS){
+      try{
+        const old=JSON.parse(localStorage.getItem(oldKey)||"null");
+        if(old && old.date===dateKey()){
+          d={
+            date:old.date,
+            dailyHours:DEFAULT_HOURS,
+            configured:false,
+            A:normalizeTimer(old.A),
+            B:normalizeTimer(old.B)
+          };
+          break;
+        }
+      }catch(e){}
+    }
+  }
+
+  if(!d || d.date!==dateKey()) d=fresh();
+
+  const fallback=(Number(d.dailyHours)||DEFAULT_HOURS)*HOUR_MS;
+  d.A=normalizeTimer(d.A,fallback);
+  d.B=normalizeTimer(d.B,fallback);
+  d.configured=!!d.configured;
+  if(d.dailyHours!==null){
+    const n=Number(d.dailyHours);
+    d.dailyHours=Number.isFinite(n)&&n>=1&&n<=7?n:DEFAULT_HOURS;
+  }
+  return d;
+}
+function save(){
+  persistArchiveSnapshot(data);
+  localStorage.setItem(KEY,JSON.stringify(data));
+  saveArchive();
+}
+let data=load();
+
+function dailyMs(){
+  return hourMs(Number(data.dailyHours)||DEFAULT_HOURS);
+}
+function rollover(){
+  if(data.date!==dateKey()){
+    persistArchiveSnapshot(data);
+    data=fresh();
+    selectedHours=null;
+    pendingSession=null;
+    closeSheet();
+    save();
+    showSetup(true);
+  }
+}
+function sync(k){
+  const t=data[k];
+  if(t.running && t.last){
+    const now=Date.now();
+    t.remaining=Math.max(0,t.remaining-(now-t.last));
+    t.last=now;
+    if(t.remaining<=0){
+      const start=t.sessionStart||now;
+      t.running=false;
+      t.last=null;
+      t.sessionStart=null;
+      pendingSession={k,start,end:now,duration:Math.max(0,now-start)};
+    }
+  }
+}
+function syncAll(){
+  sync("A");
+  sync("B");
+}
+function applyDailyHours(hours){
+  hours=Number(hours);
+  if(!Number.isFinite(hours)||hours<1||hours>7)return;
+
+  syncAll();
+
+  const hadPreviousHours=data.dailyHours!==null;
+  const oldTotal=hadPreviousHours?dailyMs():0;
+  const newTotal=hours*HOUR_MS;
+
+  for(const k of ["A","B"]){
+    const t=data[k];
+    if(!hadPreviousHours){
+      t.remaining=newTotal;
+    }else{
+      const used=Math.max(0,oldTotal-t.remaining);
+      t.remaining=Math.max(0,newTotal-used);
+
+      if(t.running && t.remaining<=0){
+        const now=Date.now();
+        const start=t.sessionStart||now;
+        t.running=false;
+        t.last=null;
+        t.sessionStart=null;
+        if(!pendingSession){
+          pendingSession={k,start,end:now,duration:Math.max(0,now-start)};
+        }
+      }
+    }
+  }
+
+  data.dailyHours=hours;
+  data.configured=true;
+  selectedHours=hours;
+  save();
+  showTimers();
+  render();
+
+  if(pendingSession) openSheet(pendingSession);
+}
+function showSetup(firstOfDay=false){
+  syncAll();
+  save();
+
+  document.getElementById("timerView").classList.add("hidden");
+  document.getElementById("setupView").classList.remove("hidden");
+
+  const hasCurrent=data.configured && data.dailyHours!==null;
+  selectedHours=hasCurrent?Number(data.dailyHours):null;
+
+  document.getElementById("backToTimers").classList.toggle("hidden",!hasCurrent);
+  document.getElementById("confirmHours").textContent=hasCurrent?"この時間に変更":"この時間で始める";
+  document.getElementById("setupHint").textContent=hasCurrent
+    ?"変更しても、今日すでに使った時間はそのまま引き継がれます。"
+    :"";
+  updateHourSelector();
+
+  if(firstOfDay || !hasCurrent){
+    selectedHours=null;
+    updateHourSelector();
+  }
+}
+function showTimers(){
+  if(!data.configured || data.dailyHours===null){
+    showSetup(true);
+    return;
+  }
+  document.getElementById("setupView").classList.add("hidden");
+  document.getElementById("timerView").classList.remove("hidden");
+}
+function updateHourSelector(){
+  document.getElementById("setupHours").textContent=selectedHours??"—";
+  document.getElementById("confirmHours").disabled=selectedHours===null;
+  for(const b of document.querySelectorAll(".hourChoice")){
+    b.classList.toggle("selected",Number(b.dataset.hours)===Number(selectedHours));
+  }
+}
+function renderHistory(k){
+  const box=document.getElementById("history"+k);
+  const items=data[k].history||[];
+  document.getElementById("count"+k).textContent=`${items.length}件`;
+  if(!items.length){
+    box.innerHTML='<div class="historyEmpty">まだ記録はありません</div>';
+    return;
+  }
+  box.innerHTML=items.slice().reverse().map(item=>{
+    const name=escapeHtml(item.name||"未入力");
+    return `<div class="historyItem"><div class="historyName">${name}</div><div class="historyMeta">${clock(item.start)}–${clock(item.end)}（${durationText(item.duration)}）</div></div>`;
+  }).join("");
+}
+function last7Dates(){
+  const arr=[];
+  const today=new Date();
+  for(let i=6;i>=0;i--){
+    const d=new Date(today);
+    d.setHours(0,0,0,0);
+    d.setDate(d.getDate()-i);
+    arr.push(d);
+  }
+  return arr;
+}
+function renderWeek(){
+  const row=document.getElementById("weekRow");
+  const live=buildArchiveEntry(data);
+  row.innerHTML=last7Dates().map(d=>{
+    const key=dateKey(d);
+    const entry=key===data.date ? live : archive[key];
+    const total=hourMs(entry && entry.dailyHours);
+    const pctA=entry && total>0 ? Math.min(1,entry.usedA/total) : 0;
+    const pctB=entry && total>0 ? Math.min(1,entry.usedB/total) : 0;
+    const usedAH=entry ? (entry.usedA/HOUR_MS) : 0;
+    const usedBH=entry ? (entry.usedB/HOUR_MS) : 0;
+    return `
+      <div class="dayCard ${key===dateKey()?"today":""}">
+        <div class="dayWeek">${weekdayLabel(d)}</div>
+        <div class="arcWrap">
+          <svg class="arcSvg" viewBox="0 0 100 100" aria-hidden="true">
+            <path class="arcBg top" d="M 16 52 A 34 34 0 0 1 84 52" pathLength="100"></path>
+            <path class="arcFg top" d="M 16 52 A 34 34 0 0 1 84 52" pathLength="100" style="stroke-dasharray:${pctA*100} 100"></path>
+            <path class="arcBg bottom" d="M 16 52 A 34 34 0 0 0 84 52" pathLength="100"></path>
+            <path class="arcFg bottom" d="M 16 52 A 34 34 0 0 0 84 52" pathLength="100" style="stroke-dasharray:${pctB*100} 100"></path>
+          </svg>
+          <div class="dayNum">${d.getDate()}</div>
+        </div>
+        <div class="dayHours">${entry && entry.dailyHours ? `本日${entry.dailyHours}h` : "未設定"}</div>
+        <div class="dayUsage"><span class="usageA">${usedAH.toFixed(1)}h</span><span class="usageB">${usedBH.toFixed(1)}h</span></div>
+      </div>
+    `;
+  }).join("");
+}
+function render(){
+  rollover();
+  syncAll();
+
+  const total=dailyMs();
+  if(data.configured && data.dailyHours!==null){
+    document.getElementById("mainAllowance").textContent=`本日の${data.dailyHours}時間`;
+  }
+
+  for(const k of ["A","B"]){
+    const t=data[k];
+    document.getElementById("time"+k).textContent=fmt(t.remaining);
+    document.getElementById("fill"+k).style.width=(total>0?Math.min(100,(t.remaining/total)*100):0)+"%";
+    const s=document.getElementById("state"+k);
+    s.textContent=t.running?"計測中":"停止中";
+    s.classList.toggle("running",t.running);
+    document.getElementById("start"+k).disabled=t.running || t.remaining<=0 || !data.configured;
+    document.getElementById("stop"+k).disabled=!t.running;
+    renderHistory(k);
+  }
+
+  const dateText=new Date().toLocaleDateString("ja-JP",{month:"2-digit",day:"2-digit",weekday:"short"});
+  document.getElementById("today").textContent=dateText;
+  document.getElementById("setupDate").textContent=dateText;
+  renderWeek();
+  save();
+
+  if(pendingSession && !document.getElementById("sheetBackdrop").classList.contains("open")){
+    openSheet(pendingSession);
+  }
+}
+function start(k){
+  rollover();
+  sync(k);
+  const t=data[k];
+  if(!data.configured || t.remaining<=0 || t.running)return;
+  const now=Date.now();
+  t.running=true;
+  t.last=now;
+  t.sessionStart=now;
+  save();
+  render();
+}
+function stop(k){
+  rollover();
+  const t=data[k];
+  if(!t.running)return;
+  sync(k);
+  if(!t.running){
+    save();
+    render();
+    if(pendingSession)openSheet(pendingSession);
+    return;
+  }
+  const end=Date.now();
+  const start=t.sessionStart||end;
+  t.running=false;
+  t.last=null;
+  t.sessionStart=null;
+  pendingSession={k,start,end,duration:Math.max(0,end-start)};
+  save();
+  render();
+  openSheet(pendingSession);
+}
+function openSheet(session){
+  const label=session.k==="A"?"自由時間":"作業時間";
+  document.getElementById("sheetEyebrow").textContent=label;
+  document.getElementById("sheetMeta").textContent=`${clock(session.start)}–${clock(session.end)}（${durationText(session.duration)}）`;
+  document.getElementById("activityInput").value="";
+  const el=document.getElementById("sheetBackdrop");
+  el.classList.add("open");
+  el.setAttribute("aria-hidden","false");
+  setTimeout(()=>document.getElementById("activityInput").focus(),120);
+}
+function closeSheet(){
+  const el=document.getElementById("sheetBackdrop");
+  if(!el)return;
+  el.classList.remove("open");
+  el.setAttribute("aria-hidden","true");
+}
+function storePending(){
+  if(!pendingSession)return;
+  const name=document.getElementById("activityInput").value.trim()||"未入力";
+  const s=pendingSession;
+  data[s.k].history.push({name,start:s.start,end:s.end,duration:s.duration});
+  pendingSession=null;
+  save();
+  closeSheet();
+  render();
+}
+function skipPending(){
+  pendingSession=null;
+  closeSheet();
+  render();
+}
+function escapeHtml(str){
+  return String(str).replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]));
+}
+
+for(const k of ["A","B"]){
+  document.getElementById("start"+k).onclick=()=>start(k);
+  document.getElementById("stop"+k).onclick=()=>stop(k);
+}
+for(const b of document.querySelectorAll(".hourChoice")){
+  b.onclick=()=>{
+    selectedHours=Number(b.dataset.hours);
+    updateHourSelector();
+  };
+}
+document.getElementById("confirmHours").onclick=()=>applyDailyHours(selectedHours);
+document.getElementById("editAllowance").onclick=()=>showSetup(false);
+document.getElementById("backToTimers").onclick=()=>showTimers();
+
+document.getElementById("saveActivity").onclick=storePending;
+document.getElementById("skipSave").onclick=skipPending;
+document.getElementById("activityInput").addEventListener("keydown",e=>{if(e.key==="Enter")storePending()});
+
+document.addEventListener("visibilitychange",()=>{
+  if(document.hidden){
+    syncAll();
+    save();
+  }else{
+    render();
+    if(!data.configured)showSetup(true);
+  }
+});
+window.addEventListener("beforeunload",()=>{syncAll();save()});
+setInterval(()=>{
+  if(!document.hidden)render();
+},250);
+
+render();
+if(data.configured)showTimers();
+else showSetup(true);
+
+if("serviceWorker" in navigator){
+  window.addEventListener("load",()=>{
+    navigator.serviceWorker.register("./service-worker.js").catch(err=>{
+      console.warn("Service Worker registration failed:",err);
+    });
+  });
+}
+</script>
+</body>
+</html>
